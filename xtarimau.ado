@@ -1,5 +1,4 @@
-*! version 1.0.0  31jan2022
-*! requires arimaauto from SSC
+*! version 1.0.1  31jan2022  I I Bolotov
 
 program define xtarimau, rclass
 	version 13.0
@@ -15,13 +14,11 @@ program define xtarimau, rclass
 	tempname timevar panelvar panelval ictests icarima limits models		///
 			 title rspec cspec tmp
 	tempfile tmpf
-
 	// install dependencies, arimaauto                                          
 	cap which arimaauto
 	if _rc {
 		ssc install arimaauto
 	}
-
 	// replay last result                                                       
 	if replay() {
 		if _by() {
@@ -53,25 +50,21 @@ program define xtarimau, rclass
 		cap ret        mat models = `models'
 		exit 0
 	}
-
 	// syntax                                                                   
 	syntax																	///
 	[varlist(ts fv)] [if] [in] [iw] [,										///
 		PREestimation(string asis) POSTestimation(string asis)				///
 		export(string asis) *												///
 	]
-
 	// adjust and preprocess options                                            
 	loc `tmp' = ustrregexm(`"`options'"', ".*ic\((\w+)\).*", 1)
 	loc ic    = cond(ustrregexs(1) == "", "aic", ustrregexs(1))
-
 	// get timevar, panelvar and panelval                                       
 	qui tsset, noq
 	loc `timevar'  = r(timevar)
 	loc `panelvar' = r(panelvar)
 	qui levelsof ``panelvar'', matrow(`panelval')
 	loc `tmp'      = r(r) 
-
 	// check if system limit is not exceeded                                    
 	qui estimates dir
 	if (`: word count `r(names)'' + ``tmp'') > 300 & `"`export'"' == "" {
@@ -79,7 +72,6 @@ program define xtarimau, rclass
 		"operation will exceed system limit, please add an export() option"
 		exit 1000
 	}
-
 	// perform estimation                                                       
 	qui ds ``panelvar'' ``timevar'', not			 // get the initial varlist
 	loc `tmp' = r(varlist)
@@ -150,7 +142,6 @@ program define xtarimau, rclass
 		tsset, clear								 // re-set the data
 		tsset ``panelvar'' ``timevar''
 	}
-	
 	// get models                                                               
 	mata: st_matrix("`models'", MS)
 	mata: if (rows(MS)) st_matrixrowstripe(                                 ///
@@ -160,7 +151,6 @@ program define xtarimau, rclass
 		"`models'", (J(8,1,""),("p","d","q","P","D","Q","const",            ///
 		                        strupper("`ic'"))')                         ///
 	);;
-
 	// print output                                                             
 	cap confirm mat `models'
 	if ! _rc {
@@ -170,13 +160,11 @@ program define xtarimau, rclass
 					  "%5.0f & %5.0f & %6.0f | %12.4f &"
 		matlist `models', title(``title'') rspec(``rspec'') cspec(``cspec'')
 	}
-
 	// return output                                                            
 	cap ret        loc ictests  ``ictests''
 	cap ret        loc icarima  ``icarima''
 	cap ret hidden mat limits = `limits'
 	cap ret        mat models = `models'
-
 	// clear memory                                                             
 	estimates drop .
 	mata: mata drop MS t ms u c r
