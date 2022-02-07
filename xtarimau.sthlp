@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.0.0  31jan2022}{...}
+{* *! version 1.0.1  31jan2022}{...}
 {vieweralsosee "[TS] arima" "mansection TS arima"}{...}
 {vieweralsosee "" "--"}{...}
 {vieweralsosee "[TS] arima postestimation" "help arima postestimation"}{...}
