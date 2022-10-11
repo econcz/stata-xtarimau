@@ -1,10 +1,9 @@
-*! version 1.0.1  31jan2022  I I Bolotov
-
+*! version 1.0.2  07oct2022  I I Bolotov
 program define xtarimau, rclass
-	version 13.0
+	version 16.0
 	/*
 		Finds the best [S]ARIMA[X] models in heterogeneous panels with the help 
-		of arimaauto (SSC). The user can run a command or program (= multiple   
+		of (SSC) arimaauto. The user can run a command or program (= multiple   
 		commands at a time) prior to and after the estimation, generating       
 		eventual new variables. The estimates can be exported to a .ster file.  
 		
@@ -14,11 +13,8 @@ program define xtarimau, rclass
 	tempname timevar panelvar panelval ictests icarima limits models		///
 			 title rspec cspec tmp
 	tempfile tmpf
-	// install dependencies, arimaauto                                          
-	cap which arimaauto
-	if _rc {
-		ssc install arimaauto
-	}
+	// check for third-party packages from SSC                                  
+	qui which arimaauto
 	// replay last result                                                       
 	if replay() {
 		if _by() {
@@ -67,7 +63,7 @@ program define xtarimau, rclass
 	loc `tmp'      = r(r) 
 	// check if system limit is not exceeded                                    
 	qui estimates dir
-	if (`: word count `r(names)'' + ``tmp'') > 300 & `"`export'"' == "" {
+	if (`: word count `r(names)'' + ``tmp'') > 300 & trim(`"`export'"') == "" {
 		di as err															///
 		"operation will exceed system limit, please add an export() option"
 		exit 1000
@@ -81,7 +77,7 @@ program define xtarimau, rclass
 	forv i = 1/`=rowsof(`panelval') + 1' {
 		/* restore, add eventual variables to the initial varlist             */
 		restore
-		if "`r(varlist)'" != "" {
+		if trim("`r(varlist)'") != "" {
 			qui merge 1:1 ``panelvar'' ``timevar'' using `tmpf', update nogen
 		}
 		/* preserve, reduce the dataset to 1 time series and re-set the data  */
@@ -98,7 +94,7 @@ program define xtarimau, rclass
 			}
 		}
 		/* run preestimation command/program (= multiple commands)            */
-		if `"`preestimation'"' != "" {
+		if trim(`"`preestimation'"') != "" {
 			`=cond(! strpos(`"`options'"', "trace"), "qui", "")'			///
 			`preestimation'
 		}
@@ -117,7 +113,7 @@ program define xtarimau, rclass
 		loc `ictests' `=r(ictests)'					 // read from r(...)
 		loc `icarima' `=r(icarima)'
 		mat `limits'  = r(limits)
-		if `"`export'"' == "" {
+		if trim(`"`export'"') == "" {
 			qui estimates store ts_`i'
 		}
 		else {
@@ -125,7 +121,7 @@ program define xtarimau, rclass
 		}
 		cap drop _*									 // drop ancillary vars
 		/* run postestimation command/program (= multiple commands)           */
-		if `"`postestimation'"' != "" {
+		if trim(`"`postestimation'"') != "" {
 			`=cond(! strpos(`"`options'"', "trace"), "qui", "")'			///
 			`postestimation'
 		}
